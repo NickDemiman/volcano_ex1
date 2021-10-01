@@ -1,17 +1,19 @@
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents}; 
 use vulkano::device::{Device, DeviceExtensions, physical::PhysicalDevice}; 
-use vulkano::render_pass::{Framebuffer, FramebufferAbstract, RenderPass}; 
-use vulkano::image::SwapchainImage; 
+use vulkano::render_pass::{Framebuffer, FramebufferAbstract, RenderPass, Subpass}; 
+use vulkano::image::{SwapchainImage, view::{ImageView,ImageViewAbstract}}; 
 use vulkano::instance::{Instance}; 
-use vulkano::pipeline::viewport::Viewport; 
+use vulkano::pipeline::{viewport::Viewport, GraphicsPipeline, GraphicsPipelineBuilder, vertex::BuffersDefinition}; 
 use vulkano::swapchain::{AcquireError, PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError}; 
 use vulkano::swapchain; 
 use vulkano::sync::{GpuFuture, FlushError}; 
 use vulkano::sync; 
+use vulkano::{SafeDeref};
 use vulkano_win::VkSurfaceBuild; 
 use winit::window::{WindowBuilder, Window}; 
 use winit::event_loop::{EventLoop, ControlFlow, EventLoopWindowTarget}; 
 use winit::event::{Event, WindowEvent}; 
+use vulkano::buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage};
 use std::sync::Arc; 
 
 
@@ -62,7 +64,6 @@ fn main()
         let alpha = caps.supported_composite_alpha.iter().next().unwrap(); 
         let format = caps.supported_formats[0].0; 
         let dimensions: [u32; 2] = surface.window().inner_size().into();
-
         Swapchain::start(device.clone(), surface.clone())
                                                         .num_images(caps.min_image_count)
                                                         .format(format)
@@ -114,5 +115,108 @@ fn main()
     
     let vs = vs::Shader::load(device.clone()).unwrap();
     let fs = fs::Shader::load(device.clone()).unwrap();
-       
+
+    // Создадим экземпляр структуры Renderpass, для настройки конвеера рендера
+    let render_pass = Arc::new(vulkano::single_pass_renderpass!
+        (   
+            device.clone(),  
+            attachments:
+            {  
+                color: 
+                {
+                    load: Clear,  
+                    store: Store,  
+                    format: swapchain.format(),  
+                    samples: 1, 
+                }  
+            },  
+            pass: 
+            {  
+                color: [color],  
+                depth_stencil: {}  
+            } 
+        ).unwrap());
+    
+    // Создадим пайплайн
+    let mut dynamic_state = DynamicState 
+    { 
+        line_width: None, 
+        viewports: None,
+        scissors: None, 
+        compare_mask: None, 
+        write_mask: None, 
+        reference: None 
+    }; 
+    
+    let pipeline = Arc::new
+    (
+        GraphicsPipeline::start()
+            .vertex_input_single_buffer::<Vertex>()
+            .vertex_shader(vs.main_entry_point(), ())
+            .triangle_list()
+            .viewports_dynamic_scissors_irrelevant(1)
+            .fragment_shader(fs.main_entry_point(), ())
+            .render_pass(
+                Subpass::from(render_pass.clone(), 0)
+                    .unwrap()
+            )
+            .build(device.clone())
+            .unwrap()
+    );
+
+    // Создание буффера
+    let vertex_buffer = CpuAccessibleBuffer::from_iter
+    (
+        device.clone(), 
+        BufferUsage::all(), 
+        false, 
+        [ 
+            Vertex 
+            {
+                position: [-0.5, 0.5, 0.0],
+                col : [0,0,0,0]
+            },
+
+            Vertex
+            {
+                position: [0.5, 0.5, 0.0],
+                col : [0,0,0,0]
+            }, 
+
+            Vertex
+            {
+                position: [0.0, -0.5, 0.0],
+                col : [0,0,0,0]
+            }
+        ].iter().cloned()
+    ).unwrap();
+
+    let mut framebuffers = window_size_dependent_setup(&images, render_pass.clone(), &mut dynamic_state);
+
+    
+}
+
+fn window_size_dependent_setup( images: &[Arc<SwapchainImage<Window>>], render_pass: Arc<RenderPass>, dynamic_state: &mut DynamicState 
+) -> Vec<Arc<dyn FramebufferAbstract + Send + Sync>> 
+{ 
+    let dimensions = images[0].dimensions(); 
+    let viewport = Viewport
+    {
+        origin: [0.0, 0.0],
+        dimensions: [dimensions[0] as f32,dimensions[1] as f32],
+        depth_range: 0.0 .. 1.0,
+    };
+
+    dynamic_state.viewports = Some(vec!(viewport)); 
+    images.iter().map(|image|
+        { 
+            let image_view = ImageView::new(image.clone()).unwrap();
+            Arc::new( 
+                    Framebuffer::start(render_pass.clone())
+                        .add(image_view)
+                        .unwrap()
+                        .build()
+                        .unwrap()
+                ) as Arc<dyn FramebufferAbstract + Send + Sync> 
+        }).collect::<Vec<_>>()
 }
