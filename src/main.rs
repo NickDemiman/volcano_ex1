@@ -1,22 +1,22 @@
+use vulkano::buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents, CommandBufferUsage}; 
 use vulkano::device::{Device, DeviceExtensions, physical::PhysicalDevice}; 
 use vulkano::render_pass::{Framebuffer, FramebufferAbstract, RenderPass, Subpass}; 
 use vulkano::image::{SwapchainImage, view::ImageView}; 
-use vulkano::instance::{Instance}; 
+use vulkano::instance::Instance; 
 use vulkano::pipeline::{viewport::Viewport, GraphicsPipeline}; 
-use vulkano::swapchain::{AcquireError, PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError}; 
 use vulkano::swapchain; 
-use vulkano::sync::{GpuFuture, FlushError}; 
+use vulkano::swapchain::{AcquireError, PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError}; 
 use vulkano::sync; 
+use vulkano::sync::{GpuFuture, FlushError}; 
 use vulkano_win::VkSurfaceBuild; 
-use winit::window::{WindowBuilder, Window}; 
-use winit::event_loop::{EventLoop, ControlFlow}; 
 use winit::event::{Event, WindowEvent}; 
-use vulkano::buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage};
+use winit::event_loop::{EventLoop, ControlFlow}; 
+use winit::window::{WindowBuilder, Window}; 
 use std::sync::Arc; 
 use std::option::Option;
 
-fn main() 
+fn InitWindowAndChooseDevice()
 {
     // Создаем инстанс
     let _instance = { 
@@ -37,7 +37,7 @@ fn main()
 
     // Создадим queue_family для дальнейшего создания экземпляров Queue
     let queue_family = physical_device.queue_families().find(|&q| { 
-            q.supports_graphics() && surface.is_supported(q).unwrap_or(false) 
+        q.supports_graphics() && surface.is_supported(q).unwrap_or(false) 
     }).unwrap();
 
     // Создаем экземпляр Device для отправки привязки нашей очереди к ГПУ
@@ -51,6 +51,13 @@ fn main()
     
     // Создадим очередь
     let queue = queues.next().unwrap();
+
+    (surface, )
+}
+
+fn main() 
+{
+    InitWindowAndChooseDevice();
 
     // Создадим свапчейн
     let (mut swapchain, images) = 
@@ -74,7 +81,6 @@ fn main()
                                                         .color_space(swapchain::ColorSpace::SrgbNonLinear)
                                                         .build()
                                                         .unwrap()
-    
     };
     
     // Создадим массив вершин
@@ -131,7 +137,8 @@ fn main()
                 color: [color],  
                 depth_stencil: {}  
             } 
-        ).unwrap());
+        ).unwrap()
+    );
     
     // Создадим пайплайн
     let mut dynamic_state = DynamicState 
@@ -144,8 +151,7 @@ fn main()
         reference: None 
     }; 
     
-    let pipeline = Arc::new
-    (
+    let pipeline = Arc::new(
         GraphicsPipeline::start()
             .vertex_input_single_buffer::<Vertex>()
             .vertex_shader(vs.main_entry_point(), ())
@@ -246,7 +252,11 @@ fn main()
 
                     let clear_values = vec!([0.0, 0.0, 0.0, 1.0].into());
 
-                    let mut cmd_buffer_builder = AutoCommandBufferBuilder::primary(device.clone(), queue.family(), CommandBufferUsage::OneTimeSubmit).unwrap();
+                    let mut cmd_buffer_builder = AutoCommandBufferBuilder::primary(
+                        device.clone(), 
+                        queue.family(), 
+                        CommandBufferUsage::OneTimeSubmit
+                    ).unwrap();
                     cmd_buffer_builder
                         .begin_render_pass(framebuffers[image_num].clone(), SubpassContents::Inline, clear_values)
                         .unwrap()
