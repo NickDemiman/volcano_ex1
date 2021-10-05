@@ -1,9 +1,9 @@
 use vulkano::buffer::{cpu_access::CpuAccessibleBuffer, BufferUsage};
 use vulkano::command_buffer::{AutoCommandBufferBuilder, DynamicState, SubpassContents, CommandBufferUsage}; 
-use vulkano::device::{Device, DeviceExtensions, physical::PhysicalDevice}; 
+use vulkano::device::{Device, DeviceExtensions}; 
 use vulkano::render_pass::{Framebuffer, FramebufferAbstract, RenderPass, Subpass}; 
 use vulkano::image::{SwapchainImage, view::ImageView}; 
-use vulkano::instance::Instance; 
+use vulkano::instance::{Instance, PhysicalDevice}; 
 use vulkano::pipeline::{viewport::Viewport, GraphicsPipeline}; 
 use vulkano::swapchain; 
 use vulkano::swapchain::{AcquireError, PresentMode, SurfaceTransform, Swapchain, SwapchainCreationError}; 
@@ -16,7 +16,7 @@ use winit::window::{WindowBuilder, Window};
 use std::sync::Arc; 
 use std::option::Option;
 
-fn InitWindowAndChooseDevice()
+fn main() 
 {
     // Создаем инстанс
     let _instance = { 
@@ -24,13 +24,17 @@ fn InitWindowAndChooseDevice()
         Instance::new(None, vulkano::Version::V1_1, &extensions, None).unwrap() 
     };
 
+    /*for physical_device in PhysicalDevice::enumerate(&_instance) {
+        println!("Available device: {}", physical_device.properties().device_name);
+    }*/
+
     // Определяем устройство, где будем выполнять рендер
     let physical_device = PhysicalDevice::enumerate(&_instance).next().unwrap();
 
     // Создаем окно
     let event_loop = EventLoop::new();
-    let surface: Arc<swapchain::Surface<Window>> = VkSurfaceBuild::build_vk_surface(
-        WindowBuilder::new(), 
+    let surface = WindowBuilder::new().build_vk_surface(
+        //WindowBuilder::new(), 
         &event_loop, 
         _instance.clone()
     ).unwrap();
@@ -51,13 +55,6 @@ fn InitWindowAndChooseDevice()
     
     // Создадим очередь
     let queue = queues.next().unwrap();
-
-    (surface, )
-}
-
-fn main() 
-{
-    InitWindowAndChooseDevice();
 
     // Создадим свапчейн
     let (mut swapchain, images) = 
@@ -99,7 +96,12 @@ fn main()
             ty: "vertex", 
             src: " #version 450
                 layout(location = 0) in vec3 position; 
-                void main() { gl_Position = vec4(position, 1.0); }" 
+                layout(location = 1) in vec4 col;
+                layout(location = 0) out vec4 opl;
+                void main() { gl_Position = vec4(position, 1.0); 
+                    opl = col;                
+                }
+                "
         }
     } 
     
@@ -109,9 +111,10 @@ fn main()
         {
             ty: "fragment", 
             src: " #version 450
+                layout(location = 0) in vec4 opl;
                 layout(location = 0) out vec4 f_color;
                 void main() {
-                f_color = vec4(1.0, 0.0, 0.0, 1.0); } " 
+                f_color = opl; } " 
         } 
     } 
     
@@ -176,19 +179,19 @@ fn main()
             Vertex 
             {
                 position: [-0.5, 0.5, 0.0],
-                col : [0.0,0.0,0.0,0.0]
+                col : [0.5,0.0,0.0,0.0]
             },
 
             Vertex
             {
                 position: [0.5, 0.5, 0.0],
-                col : [0.0,0.0,0.0,0.0]
+                col : [0.0,0.5,0.0,0.0]
             }, 
 
             Vertex
             {
                 position: [0.0, -0.5, 0.0],
-                col : [0.0,0.0,0.0,0.0]
+                col : [0.0,0.0,0.5,0.0]
             }
         ].iter().cloned()
     ).unwrap();
@@ -250,7 +253,7 @@ fn main()
                         recreate_swapchain = true; 
                     }
 
-                    let clear_values = vec!([0.0, 0.0, 0.0, 1.0].into());
+                    let clear_values = vec!([197.0/255., 208.0/255., 230.0/255., 1.0].into());
 
                     let mut cmd_buffer_builder = AutoCommandBufferBuilder::primary(
                         device.clone(), 
@@ -260,7 +263,7 @@ fn main()
                     cmd_buffer_builder
                         .begin_render_pass(framebuffers[image_num].clone(), SubpassContents::Inline, clear_values)
                         .unwrap()
-                        .draw(pipeline.clone(), &dynamic_state, vertex_buffer.clone(), (), ())
+                        .draw(pipeline.clone(), &dynamic_state, vertex_buffer.clone(), (), (),vec![])
                         .unwrap()
                         .end_render_pass()
                     .unwrap();

@@ -32,9 +32,9 @@ dependencies = [
 
 [[package]]
 name = "ash"
-version = "0.33.3+1.2.191"
+version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cc4f1d82f164f838ae413296d1131aa6fa79b917d25bebaa7033d25620c09219"
+checksum = "06063a002a77d2734631db74e8f4ce7148b77fe522e6bca46f2ae7774fd48112"
 dependencies = [
  "libloading 0.7.0",
 ]
@@ -667,15 +667,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "num-traits"
-version = "0.2.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a64b1ec5cda2586e284722486d802acf1f7dbdc623e2bfc57e65ca1cd099290"
-dependencies = [
- "autocfg",
-]
-
-[[package]]
 name = "num_enum"
 version = "0.5.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -933,16 +924,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spirv_headers"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f5b132530b1ac069df335577e3581765995cba5a13995cdbbdbc8fb057c532c"
-dependencies = [
- "bitflags",
- "num-traits",
-]
-
-[[package]]
 name = "strsim"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1033,9 +1014,9 @@ dependencies = [
 
 [[package]]
 name = "vulkano"
-version = "0.25.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2e631daf0d54bf36908ccff9f38ced7ff253a327e396ac13503a11401bee8c38"
+checksum = "a0a8ae6e9514c03a625547146f3636ed200e1752a25a96c45d8ab9462e902b74"
 dependencies = [
  "ash",
  "crossbeam-queue",
@@ -1053,23 +1034,21 @@ dependencies = [
 
 [[package]]
 name = "vulkano-shaders"
-version = "0.25.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f45834e124ae0fdc95a358d83f163d9b14e9ec7780d99cd5aecbf4e76b1a67e"
+checksum = "1b38dcd7ec9a6d5243db14a338a9936e4ef1afa1bbb0b906effa6f93e99249a9"
 dependencies = [
- "num-traits",
  "proc-macro2",
  "quote",
  "shaderc",
- "spirv_headers",
  "syn",
 ]
 
 [[package]]
 name = "vulkano-win"
-version = "0.25.0"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ef5a84fe7d636a1aefdaecabb89b8c47d0b3a785653a38ffbc69a34fb46f6784"
+checksum = "590a2101388ab0f4eaef3def774e85a58edb73b9123b3056789e39d43a99ab4a"
 dependencies = [
  "cocoa 0.20.2",
  "metal",
